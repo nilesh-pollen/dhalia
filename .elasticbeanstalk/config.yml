@@ -1,11 +1,6 @@
 branch-defaults:
   default:
     environment: null
-  eb_setup:
-    environment: dalia-api-service
-    group_suffix: null
-  main:
-    environment: dalia-api-service
 global:
   application_name: dalia-api-service
   branch: null
