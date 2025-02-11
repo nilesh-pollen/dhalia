@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Exit on error
 set -e
 
@@ -39,6 +38,19 @@ fi
 # Build and tag Docker image
 echo -e "${YELLOW}Building Docker image...${NC}"
 docker build -t dhalia-api .
+
+# Set environment variables from .env file
+if [ -f .env ]; then
+    echo -e "${YELLOW}Setting environment variables from .env file...${NC}"
+    while IFS='=' read -r key value; do
+        if [ -n "$key" ] && [ -n "$value" ] && [[ ! "$key" =~ ^# ]]; then
+            echo -e "${GREEN}Setting $key${NC}"
+            eb setenv "$key=$value"
+        fi
+    done < .env
+else
+    echo -e "${RED}Warning: .env file not found${NC}"
+fi
 
 # Create or update the environment
 if ! eb status ${ENVIRONMENT} &> /dev/null; then
