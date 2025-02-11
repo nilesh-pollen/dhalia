@@ -1,15 +1,10 @@
 {
   "AWSEBDockerrunVersion": "1",
-  "Image": {
-    "Name": "dhalia-api",
-    "Update": "true"
-  },
   "Ports": [
     {
-      "ContainerPort": "8001",
-      "HostPort": "80"
+      "ContainerPort": "5000",
+      "HostPort": "5000"
     }
-  ],
-  "Volumes": [],
-  "Logging": "/var/log/nginx"
+  ]
 }
+

@@ -1,68 +1,21 @@
 #!/bin/bash
-# Exit on error
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+ENV="prod"
+DEPLOY_VERSION="app-$(git rev-parse --short HEAD)-$(date +%Y%m%d_%H%M%S)"
 
-# Configuration
-AWS_REGION="ap-southeast-1"  # Singapore region
-ENVIRONMENT="prod"           # Production environment
-BRANCH="main"               # Main branch
+# Validate environment
+eb status $ENV > /dev/null 2>&1 || { echo "Environment $ENV not found"; exit 1; }
 
-# Check if we're on the main branch
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
-    echo -e "${RED}Error: Please switch to main branch first${NC}"
-    echo -e "Run: ${GREEN}git checkout main${NC}"
-    exit 1
-fi
+# Create deployment package
+eb deploy $ENV \
+  --label "$DEPLOY_VERSION" \
+  --timeout 10 \
+  --process \
+  || { echo "Deployment failed"; exit 1; }
 
-# Check if EB CLI is installed
-if ! command -v eb &> /dev/null; then
-    echo -e "${RED}Error: Elastic Beanstalk CLI is not installed. Please install it first.${NC}"
-    exit 1
-fi
+# Verify deployment
+eb health $ENV | grep -q "Ok" \
+  && echo "Deployment verified" \
+  || { echo "Health check failed"; exit 1; }
 
-# Initialize Elastic Beanstalk if needed
-if [ ! -d .elasticbeanstalk ]; then
-    echo -e "${YELLOW}Initializing Elastic Beanstalk...${NC}"
-    eb init dhalia-api \
-        --platform docker \
-        --region ${AWS_REGION}
-fi
-
-# Build and tag Docker image
-echo -e "${YELLOW}Building Docker image...${NC}"
-docker build -t dhalia-api .
-
-# Set environment variables from .env file
-if [ -f .env ]; then
-    echo -e "${YELLOW}Setting environment variables from .env file...${NC}"
-    while IFS='=' read -r key value; do
-        if [ -n "$key" ] && [ -n "$value" ] && [[ ! "$key" =~ ^# ]]; then
-            echo -e "${GREEN}Setting $key${NC}"
-            eb setenv "$key=$value"
-        fi
-    done < .env
-else
-    echo -e "${RED}Warning: .env file not found${NC}"
-fi
-
-# Create or update the environment
-if ! eb status ${ENVIRONMENT} &> /dev/null; then
-    echo -e "${YELLOW}Creating production environment...${NC}"
-    eb create ${ENVIRONMENT} \
-        --instance_type t2.micro \
-        --single \
-        --cname dhalia-api-${ENVIRONMENT} \
-        --timeout 20
-else
-    echo -e "${YELLOW}Deploying to production...${NC}"
-    eb deploy ${ENVIRONMENT}
-fi
-
-echo -e "${GREEN}Deployment completed successfully!${NC}"
