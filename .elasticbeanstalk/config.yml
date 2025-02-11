@@ -1,9 +1,12 @@
 branch-defaults:
   main:
-    environment: prod
+    environment: lms-agent
+    group_suffix: null
+  sandbox:
+    environment: lms-agent
     group_suffix: null
 global:
-  application_name: dhalia-api
+  application_name: lms-agent-ai-app
   branch: null
   default_ec2_keyname: null
   default_platform: Docker
